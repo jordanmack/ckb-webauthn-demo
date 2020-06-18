@@ -67,6 +67,14 @@
 
                 <div class="secretcontainer">
                     <h3>Hey <span id="name"></span>!</h3>
+                    <div>CKBAddress: <span id="address"></span></div>
+                    <div>Balance: <span id="balance"></span></div>
+                    <div>------------------------------------------------------------------</div>
+                    <div> send 100 CKB to ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8
+                     </div>
+                     <div>
+                    <button id="sendCKB">sendCKB</button>
+                    </div>
                     <div id="theSecret"></div>
                     <button id="logoutButton">Logout</button>
                 </div>
@@ -76,19 +84,7 @@
     </div>
 
     <script src="js/jquery-3.2.1.min.js"></script>
-    <script src="js/utils.js"></script>
     <script src="js/base64url-arraybuffer.js"></script>
-    <script src="js/view.js"></script>
-    <script src="js/password.auth.js"></script>
-    <script src="js/webauthn.auth.js"></script>
-    <script>
-        $(document).ready(() => {
-            checkIfLoggedIn()
-            .then((response) => {
-                if(response)
-                    return loadMainContainer()
-            })
-        })
-    </script>
+    <script src="js/bundle.js"></script>
 </body>
 </html>

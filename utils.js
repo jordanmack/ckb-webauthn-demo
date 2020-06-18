@@ -15,6 +15,9 @@ let U2F_USER_PRESENTED = 0x01;
  * @return {Boolean}
  */
 let verifySignature = (signature, data, publicKey) => {
+    console.log('data', data);
+    console.log('publicKey', publicKey);
+    console.log('signature', signature);
     return crypto.createVerify('SHA256')
         .update(data)
         .verify(publicKey, signature);
@@ -201,12 +204,15 @@ let verifyAuthenticatorAttestationResponse = (webAuthnResponse) => {
     if(ctapMakeCredResp.fmt === 'fido-u2f') {
         let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
 
+        console.log('authrDataStruct', authrDataStruct);
+
         if(!(authrDataStruct.flags & U2F_USER_PRESENTED))
             throw new Error('User was NOT presented durring authentication!');
 
         let clientDataHash  = hash(base64url.toBuffer(webAuthnResponse.response.clientDataJSON))
         let reservedByte    = Buffer.from([0x00]);
         let publicKey       = COSEECDHAtoPKCS(authrDataStruct.COSEPublicKey)
+        console.log('publicKey', publicKey);
         let signatureBase   = Buffer.concat([reservedByte, authrDataStruct.rpIdHash, clientDataHash, authrDataStruct.credID, publicKey]);
 
         let PEMCertificate = ASN1toPEM(ctapMakeCredResp.attStmt.x5c[0]);
@@ -257,23 +263,57 @@ let parseGetAssertAuthData = (buffer) => {
 
     return {rpIdHash, flagsBuf, flags, counter, counterBuf}
 }
+Buffer.prototype.bufferString=function(){
+    const arr = [...this].join(", ");
+    return arr;
+}
 
 let verifyAuthenticatorAssertionResponse = (webAuthnResponse, authenticators) => {
+    console.log("verifyAuthenticatorAssertionResponse", webAuthnResponse, authenticators);
     let authr = findAuthr(webAuthnResponse.id, authenticators);
     let authenticatorData = base64url.toBuffer(webAuthnResponse.response.authenticatorData);
 
     let response = {'verified': false};
     if(authr.fmt === 'fido-u2f') {
         let authrDataStruct  = parseGetAssertAuthData(authenticatorData);
+        console.log("authrDataStruct", authrDataStruct);
 
         if(!(authrDataStruct.flags & U2F_USER_PRESENTED))
             throw new Error('User was NOT presented durring authentication!');
+        
+        console.log("clientdataJSON", base64url.toBuffer(webAuthnResponse.response.clientDataJSON).bufferString());
+        // decode the clientDataJSON into a utf-8 string
+        const utf8Decoder = new TextDecoder('utf-8')
+        const decodedClientData = utf8Decoder.decode(base64url.toBuffer(webAuthnResponse.response.clientDataJSON))
+
+        // parse the string as an object
+        const clientDataObj = JSON.parse(decodedClientData)
+
+        console.log('clientDataObj', clientDataObj)
+
+        const challenge = base64url.toBuffer(clientDataObj.challenge);
+        console.log('challenge', challenge.toString('hex'));
+        console.log('challenge', challenge.bufferString());
+
+        
+
 
         let clientDataHash   = hash(base64url.toBuffer(webAuthnResponse.response.clientDataJSON))
         let signatureBase    = Buffer.concat([authrDataStruct.rpIdHash, authrDataStruct.flagsBuf, authrDataStruct.counterBuf, clientDataHash]);
 
+        
+        console.log("publickey", base64url.toBuffer(authr.publicKey).toString('hex'));
+        console.log("publickey", base64url.toBuffer(authr.publicKey).bufferString());
+        console.log("clientDataHash", clientDataHash.toString('hex'));
+        console.log("clientDataHash", clientDataHash.bufferString());
+        console.log("signatureBase", signatureBase.toString('hex'));
+        console.log("signatureBase", signatureBase.bufferString());
+
         let publicKey = ASN1toPEM(base64url.toBuffer(authr.publicKey));
         let signature = base64url.toBuffer(webAuthnResponse.response.signature);
+
+        console.log('signature', signature.toString('hex'));
+        console.log('signature', signature.bufferString());
 
         response.verified = verifySignature(signature, signatureBase, publicKey)
 
@@ -282,6 +322,8 @@ let verifyAuthenticatorAssertionResponse = (webAuthnResponse, authenticators) =>
                 throw new Error('Authr counter did not increase!');
 
             authr.counter = authrDataStruct.counter
+
+            response.authrInfo = authr;
         }
     }
 

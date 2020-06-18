@@ -4,12 +4,30 @@
   "description": "",
   "main": "app.js",
   "dependencies": {
+    "@nervosnetwork/ckb-sdk-core": "^0.32.0",
+    "@nervosnetwork/ckb-sdk-utils": "^0.32.0",
+    "array-buffer-to-hex": "^1.0.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
     "base64url": "^2.0.0",
     "body-parser": "^1.15.2",
     "cbor": "^3.0.3",
     "cookie-parser": "^1.4.3",
     "cookie-session": "^2.0.0-beta.3",
-    "express": "^4.15.4"
+    "express": "^4.15.4",
+    "mongoose": "^5.9.19",
+    "web3-utils": "^1.2.9"
+  },
+  "devDependencies": {
+    "babel-core": "^6.22.1",
+    "babel-preset-es2015-rollup": "^3.0.0",
+    "rollup": "^0.41.4",
+    "rollup-plugin-babel": "^2.7.1",
+    "rollup-plugin-commonjs": "^7.0.0",
+    "rollup-plugin-node-resolve": "^2.0.0",
+    "rollup-plugin-uglify": "^1.0.1"
+  },
+  "scripts": {
+    "build": "browserify static/js/view.js -o static/js/bundle.js"
   },
   "repository": {
     "type": "git",
