@@ -7,18 +7,9 @@ const database  = require('./db');
 const userModel = require('./usermodel');
 
 
-router.post('/register', (request, response) => {
-    if(!request.body || !request.body.username || !request.body.name) {
-        response.json({
-            'status': 'failed',
-            'message': 'Request missing name or username field!'
-        })
+/* ---------- ROUTES START ---------- */
 
-        return
-    }
 
-    let username = request.body.username;
-    let name     = request.body.name;
 
     userModel.findOne({ username }).then((user) => {
       if (user && user.registered) {
