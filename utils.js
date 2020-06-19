@@ -232,7 +232,8 @@ let verifyAuthenticatorAttestationResponse = (webAuthnResponse) => {
                 credID: base64url.encode(authrDataStruct.credID)
             }
         }
-    } else if (ctapMakeCredResp.fmt === 'packed'){
+    } else {
+        // if (ctapMakeCredResp.fmt === 'packed') {
         // && ctapMakeCredResp.attStmt.hasOwnProperty('x5c')) {
         let authrDataStruct = parseMakeCredAuthData(ctapMakeCredResp.authData);
 
@@ -284,9 +285,7 @@ let verifyAuthenticatorAttestationResponse = (webAuthnResponse) => {
                 credID: base64url.encode(authrDataStruct.credID)
             }
         }
-    } else {
-        throw new Error('Unsupported attestation format! ' + ctapMakeCredResp.fmt);
-    }
+    } 
 
     return response
 }
