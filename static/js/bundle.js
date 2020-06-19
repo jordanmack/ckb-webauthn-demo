@@ -41981,7 +41981,7 @@ const arrayBufferToHex = require('array-buffer-to-hex');
 const { sha3, hexToNumber, bytesToHex, hexToBytes, padRight, padLeft, numberToHex } = require('web3-utils');
 const { createHash } = require('crypto');
 
-const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./utils');
+const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./helpers');
 
 const querystring = require('querystring');
 
@@ -42178,7 +42178,7 @@ async function signR1Tx(rawTx) {
     allowCredentials: [
       {
         id: credIDBuffer,
-        transports: ['usb', 'nfc', 'ble'],
+        transports: ['usb', 'nfc', 'ble', 'internal'],
         type: 'public-key'
       }
     ]
@@ -42245,7 +42245,7 @@ module.exports = {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./ckb_config_lay2":273,"./utils":274,"@nervosnetwork/ckb-sdk-core":162,"@nervosnetwork/ckb-sdk-utils":184,"array-buffer-to-hex":189,"buffer":47,"crypto":55,"querystring":126,"web3-utils":269}],273:[function(require,module,exports){
+},{"./ckb_config_lay2":273,"./helpers":274,"@nervosnetwork/ckb-sdk-core":162,"@nervosnetwork/ckb-sdk-utils":184,"array-buffer-to-hex":189,"buffer":47,"crypto":55,"querystring":126,"web3-utils":269}],273:[function(require,module,exports){
 const { scriptToHash } = require('@nervosnetwork/ckb-sdk-utils')
 
 const CKB_NODE_URL = 'https://lay2.ckb.dev';
@@ -42369,7 +42369,7 @@ module.exports = {
 
 },{}],275:[function(require,module,exports){
 const { getMakeCredentialsChallenge, sendWebAuthnResponse, getGetAssertionChallenge } = require('./webauthn.auth')
-const { publicKeyCredentialToJSON, preformatGetAssertReq, preformatMakeCredReq } = require('./utils')
+const { publicKeyCredentialToJSON, preformatGetAssertReq, preformatMakeCredReq } = require('./helpers')
 const arrayBufferToHex = require('array-buffer-to-hex')
 const { addressFromPubKey, getBalance, sendCKB } = require('./ckb')
 
@@ -42548,7 +42548,7 @@ $(document).ready(() => {
   })
 })
 
-},{"./ckb":272,"./utils":274,"./webauthn.auth":276,"array-buffer-to-hex":189}],276:[function(require,module,exports){
+},{"./ckb":272,"./helpers":274,"./webauthn.auth":276,"array-buffer-to-hex":189}],276:[function(require,module,exports){
 'use strict';
 
 let getMakeCredentialsChallenge = (formBody) => {

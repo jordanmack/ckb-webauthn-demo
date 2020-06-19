@@ -1,5 +1,5 @@
 const { getMakeCredentialsChallenge, sendWebAuthnResponse, getGetAssertionChallenge } = require('./webauthn.auth')
-const { publicKeyCredentialToJSON, preformatGetAssertReq, preformatMakeCredReq } = require('./utils')
+const { publicKeyCredentialToJSON, preformatGetAssertReq, preformatMakeCredReq } = require('./helpers')
 const arrayBufferToHex = require('array-buffer-to-hex')
 const { addressFromPubKey, getBalance, sendCKB } = require('./ckb')
 

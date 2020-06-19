@@ -16,7 +16,7 @@ const arrayBufferToHex = require('array-buffer-to-hex');
 const { sha3, hexToNumber, bytesToHex, hexToBytes, padRight, padLeft, numberToHex } = require('web3-utils');
 const { createHash } = require('crypto');
 
-const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./utils');
+const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./helpers');
 
 const querystring = require('querystring');
 
@@ -213,7 +213,7 @@ async function signR1Tx(rawTx) {
     allowCredentials: [
       {
         id: credIDBuffer,
-        transports: ['usb', 'nfc', 'ble'],
+        transports: ['usb', 'nfc', 'ble', 'internal'],
         type: 'public-key'
       }
     ]
