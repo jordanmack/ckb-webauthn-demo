@@ -22,7 +22,7 @@ With the help of P-256 lockscript, we can now use Web Authn compatible browsers 
 
 ### Run
 
-- `git clone https://github.com/fido-alliance/webauthn-demo/`
-- `cd webauthn-demo`
+- `git clone https://github.com/lay2dev/ckb-webauthn-demo/`
+- `cd ckb-webauthn-demo`
 - `npm install`
 - `node app`
