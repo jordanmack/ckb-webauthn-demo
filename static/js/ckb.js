@@ -253,7 +253,8 @@ async function sendCKB(pubKey) {
   console.log('signedTx', signedTx)
 
   try {
-    const realTxHash = await ckb.rpc.sendTransaction(signedTx)
+    const ckb2 = new CKB(CKB_NODE_URL)
+    const realTxHash = await ckb2.rpc.sendTransaction(signedTx)
     console.log(`The real transaction hash is: ${realTxHash}`)
 
     return realTxHash
