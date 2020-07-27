@@ -166,10 +166,14 @@ $('#sendCKB').click(function (event) {
   console.log('start sendCKB')
   const oldValue = $('#balance').html()
   if (parseFloat(oldValue) > 200) {
-    sendCKB(pubKey).then((txHash) => {
-      $('#balance').html(oldValue + '...')
-      alert('send Success, txHash=' + txHash)
-    })
+    sendCKB(pubKey)
+      .then((txHash) => {
+        $('#balance').html(oldValue + '...')
+        alert('send Success, txHash=' + txHash)
+      })
+      .catch((err) => {
+        alert(err)
+      })
   } else {
     alert('balance not enough')
   }

@@ -259,6 +259,7 @@ async function sendCKB(pubKey) {
     return realTxHash
   } catch (err) {
     console.log('send error', err)
+    throw err
   }
 }
 
