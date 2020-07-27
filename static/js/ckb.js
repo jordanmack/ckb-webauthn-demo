@@ -252,10 +252,14 @@ async function sendCKB(pubKey) {
   const signedTx = await signR1Tx(tx)
   console.log('signedTx', signedTx)
 
-  const realTxHash = await ckb.rpc.sendTransaction(signedTx)
-  console.log(`The real transaction hash is: ${realTxHash}`)
+  try {
+    const realTxHash = await ckb.rpc.sendTransaction(signedTx)
+    console.log(`The real transaction hash is: ${realTxHash}`)
 
-  return realTxHash
+    return realTxHash
+  } catch (err) {
+    console.log('send error', err)
+  }
 }
 
 module.exports = {
