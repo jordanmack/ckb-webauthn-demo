@@ -1,45 +1,45 @@
-const express  = require('express');
-const utils    = require('../utils');
-const router   = express.Router();
-const database = require('./db');
+const express = require('express')
+const utils = require('../utils')
+const router = express.Router()
+const database = require('./db')
 
 /* Returns if user is logged in */
 router.get('/isLoggedIn', (request, response) => {
-    if(!request.session.loggedIn) {
-        response.json({
-            'status': 'failed'
-        })
-    } else {
-        response.json({
-            'status': 'ok'
-        })
-    }
+  if (!request.session.loggedIn) {
+    response.json({
+      status: 'failed',
+    })
+  } else {
+    response.json({
+      status: 'ok',
+    })
+  }
 })
 
 /* Logs user out */
 router.get('/logout', (request, response) => {
-    request.session.loggedIn = false;
-    request.session.username = undefined;
+  request.session.loggedIn = false
+  request.session.username = undefined
 
-    response.json({
-        'status': 'ok'
-    })
+  response.json({
+    status: 'ok',
+  })
 })
 
 /* Returns personal info and THE SECRET INFORMATION */
 router.get('/personalInfo', (request, response) => {
-    if(!request.session.loggedIn) {
-        response.json({
-            'status': 'failed',
-            'message': 'Access denied'
-        })
-    } else {
-        response.json({
-            'status': 'ok',
-            'name': request.session.username,
-            'theSecret': '<img width="250px" src="img/theworstofthesecrets.jpg">'
-        })
-    }
+  if (!request.session.loggedIn) {
+    response.json({
+      status: 'failed',
+      message: 'Access denied',
+    })
+  } else {
+    response.json({
+      status: 'ok',
+      name: request.session.username,
+      theSecret: '<img width="150px" src="img/theworstofthesecrets.jpg">',
+    })
+  }
 })
 
-module.exports = router;
+module.exports = router
