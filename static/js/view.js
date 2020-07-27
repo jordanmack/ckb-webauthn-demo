@@ -164,12 +164,15 @@ $('#sendCKB').click(function (event) {
   event.preventDefault()
   const pubKey = '0x' + localStorage.getItem('publicKey')
   console.log('start sendCKB')
-  sendCKB(pubKey).then((txHash) => {
-    const oldValue = $('#balance').html()
-    $('#balance').html(oldValue + '...')
-
-    alert('send Success, txHash=' + txHash)
-  })
+  const oldValue = $('#balance').html()
+  if (parseFloat(oldValue) > 200) {
+    sendCKB(pubKey).then((txHash) => {
+      $('#balance').html(oldValue + '...')
+      alert('send Success, txHash=' + txHash)
+    })
+  } else {
+    alert('balance not enough')
+  }
 })
 
 $(document).ready(() => {

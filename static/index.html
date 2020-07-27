@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
     <link rel="stylesheet" href="css/milligram.min.css">
     <style>
         html, body, .container, .row {
-            height: 100%;
+            height: 99%;
         }
 
         .formcontainer {
@@ -24,6 +25,17 @@
 
         #registerContainer, #mainContainer {
             display: none;
+        }
+        .addressSpan {
+            word-break: break-word;
+            color: darkcyan;
+        }
+
+        #balance {
+            color: orangered;
+        }
+        hr {
+            border-top: 1px dashed red;
         }
     </style>
 </head>
@@ -69,10 +81,10 @@
 
                 <div class="secretcontainer">
                     <h3>Hey <span id="name"></span>!</h3>
-                    <div>CKBAddress: <span id="address"></span></div>
-                    <div>Balance: <span id="balance"></span></div>
-                    <div>------------------------------------------------------------------</div>
-                    <div> send 100 CKB to ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8
+                    <div>CKBAddress: <span id="address" class='addressSpan'></span></div>
+                    <div>Balance: <span id="balance"></span> CKB </div>
+                    <hr>
+                    <div> send 100 CKB to <span class="addressSpan">ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8 </span>
                      </div>
                      <div>
                     <button id="sendCKB">sendCKB</button>
