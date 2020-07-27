@@ -111,7 +111,7 @@ async function buildR1Tx(r1PubKey, to, capacity) {
     cells: unspentCells,
     deps: secp256k1Dep,
     safeMode: true,
-    changeThreshold: BigInt(105 * 10 ** 8).toString(16),
+    changeThreshold: '0x' + BigInt(105 * 10 ** 8).toString(16),
   })
 
   const oldOutputLockHash = scriptToHash({
