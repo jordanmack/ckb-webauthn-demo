@@ -17,7 +17,7 @@ const secp256R1LockCell = {
   },
   capacity: 150000 * 10 ** 8,
   outPoint: {
-    txHash: '0x58ffa7194488d3612944588a5c769f71d8a0cd956936d471a1f5d470b73651c4',
+    txHash: '0x9d41a44e88ffd3d8b0dcf6a30c00f262b8d95f6e3c9f6bd8aa37ef5ad06d8ffc',
     index: '0x0',
   },
 

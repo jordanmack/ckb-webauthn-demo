@@ -42009,11 +42009,10 @@ async function getBalance(pubKey) {
   const url = 'https://cellapitest.ckb.pw/cell/getCapacityByLockHash?lockHash=' + lockHash
 
   const response = await fetch(url)
-  const result = await response.json()
+  const result = await response.text()
   console.log('balance', result)
 
-  const balance = Number(result.data)
-  console.log('balance', balance)
+  const balance = hexToNumber(result)
   const balanceStr = balance / 10 ** 8
 
   return balanceStr
@@ -42036,7 +42035,7 @@ async function getUnspentCell(lockHash) {
   const result = await response.json()
   console.log('response', result)
 
-  return result.data
+  return result
 }
 function changeOutputLock(tx, oldLockHash, newLock) {
   for (const output of tx.outputs) {
@@ -42133,7 +42132,7 @@ async function signR1Tx(rawTx) {
   console.log('rawTransaction', rawTx)
   console.log('txhash', transactionHash)
   const emptyWitness = rawTx.witnesses[0]
-  emptyWitness.lock = '0x' + '0'.repeat(1000)
+  emptyWitness.lock = '0x' + '0'.repeat(600)
 
   const serializedEmptyWitnessBytes = hexToBytes(serializeWitnessArgs(emptyWitness))
   const serialziedEmptyWitnessSize = serializedEmptyWitnessBytes.length
@@ -42198,7 +42197,7 @@ async function signR1Tx(rawTx) {
   const lockBuffer = Buffer.concat([rsSignature, authrData, clientDataJSON.toBuffer()])
 
   emptyWitness.lock = lockBuffer.toString('hex')
-  emptyWitness.lock = '0x' + padRight(emptyWitness.lock, 1000, '0')
+  emptyWitness.lock = '0x' + padRight(emptyWitness.lock, 600, '0')
 
   console.log('emptyWitness.lock', emptyWitness.lock)
 
@@ -42258,7 +42257,7 @@ const secp256R1LockCell = {
   },
   capacity: 150000 * 10 ** 8,
   outPoint: {
-    txHash: '0x9d41a44e88ffd3d8b0dcf6a30c00f262b8d95f6e3c9f6bd8aa37ef5ad06d8ffc',
+    txHash: '0x58ffa7194488d3612944588a5c769f71d8a0cd956936d471a1f5d470b73651c4',
     index: '0x0',
   },
 

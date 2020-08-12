@@ -92,6 +92,7 @@ $('#register').submit(function (event) {
     .then((response) => {
       console.log('request register success')
       let publicKey = preformatMakeCredReq(response)
+      publicKey.attestation = 'none'
       console.log('navigator.credentials.create: ', { publicKey })
       return navigator.credentials.create({ publicKey })
     })
