@@ -81,7 +81,8 @@ $('#register').submit(function (event) {
   event.preventDefault()
 
   let username = this.username.value
-  let name = this.name.value
+  // let name = this.name.value
+  let name = username;
 
   if (!username || !name) {
     alert('Name or username is missing!')

@@ -60,4 +60,6 @@ typings/
 data/
 
 logs/
+static/js/bundle.js
+bundle_*.js
 

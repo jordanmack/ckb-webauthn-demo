@@ -20,7 +20,7 @@ const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./helpers
 
 const querystring = require('querystring')
 
-const { CKB_NODE_URL, blockAssemblerCode, r1TypeId, secp256R1LockCell } = require('./ckb_config_lay2')
+const { CKB_NODE_URL, blockAssemblerCode, r1TypeId, secp256R1LockCell, CELL_API_BASE, secp256k1Dep } = require('./ckb_config_aggron')
 
 const ckb = new CKB(CKB_NODE_URL)
 
@@ -41,7 +41,7 @@ async function getBalance(pubKey) {
   })
   // const balance = await ckb.rpc.getCapacityByLockHash(lockHash);
 
-  const url = 'https://cellapitest.ckb.pw/cell/getCapacityByLockHash?lockHash=' + lockHash
+  const url = CELL_API_BASE + '/cell/getCapacityByLockHash?lockHash=' + lockHash
 
   const response = await fetch(url)
   const result = await response.json()
@@ -64,7 +64,7 @@ async function getUnspentCell(lockHash) {
   }
 
   const params = querystring.stringify(args)
-  const url = 'https://cellapitest.ckb.pw/cell/unSpent?' + params
+  const url = CELL_API_BASE + '/cell/unSpent?' + params
   console.log('url', url)
 
   const response = await fetch(url)
@@ -84,14 +84,6 @@ function changeOutputLock(tx, oldLockHash, newLock) {
 async function buildR1Tx(r1PubKey, to, capacity) {
   const from = 'ckt1qyqwzd6uxvrh9v2xdp2v5x7uh3gnexcmwncsa967p8'
 
-  const secp256k1Dep = {
-    hashType: 'type',
-    codeHash: '0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8',
-    outPoint: {
-      txHash: '0xace5ea83c478bb866edf122ff862085789158f5cbff155b7bb5f13058555b708',
-      index: '0x0',
-    },
-  }
   const inputLockHash = scriptToHash({
     codeHash: r1TypeId,
     hashType: 'type',
