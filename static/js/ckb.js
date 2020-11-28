@@ -41,7 +41,7 @@ async function getBalance(pubKey) {
   })
   // const balance = await ckb.rpc.getCapacityByLockHash(lockHash);
 
-  const url = 'https://cellapi.ckb.pw/cell/getCapacityByLockHash?lockHash=' + lockHash
+  const url = 'https://cellapitest.ckb.pw/cell/getCapacityByLockHash?lockHash=' + lockHash
 
   const response = await fetch(url)
   const result = await response.text()
@@ -63,7 +63,7 @@ async function getUnspentCell(lockHash) {
   }
 
   const params = querystring.stringify(args)
-  const url = 'https://cellapi.ckb.pw/cell/unSpent?' + params
+  const url = 'https://cellapitest.ckb.pw/cell/unSpent?' + params
   console.log('url', url)
 
   const response = await fetch(url)
