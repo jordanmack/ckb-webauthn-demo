@@ -12,6 +12,15 @@ $('#toLogin').click(function (e) {
   $('#loginContainer').show()
 })
 
+const scheduleJobList = [];
+const timeOutFunc = () => {
+  for(const func of scheduleJobList){
+    func();
+  }
+  setTimeout(timeOutFunc, 2000)
+}
+timeOutFunc();
+
 /**
  * Switch to registration page
  */
@@ -42,12 +51,9 @@ let loadMainContainer = () => {
           })
         }
 
-        const timeOutFunc = () => {
-          balanceFunc()
-          setTimeout(timeOutFunc, 2000)
+        if(!scheduleJobList.includes(balanceFunc)){
+           scheduleJobList.push(balanceFunc);
         }
-
-        timeOutFunc()
       } else {
         alert(`Error! ${response.message}`)
       }
@@ -74,6 +80,7 @@ $('#logoutButton').click(() => {
   $('#registerContainer').hide()
   $('#mainContainer').hide()
   $('#loginContainer').show()
+  scheduleJobList.splice(0,scheduleJobList.length);
 })
 
 /* Handle for register form submission */

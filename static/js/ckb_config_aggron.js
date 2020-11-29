@@ -1,6 +1,6 @@
 const { scriptToHash } = require('@nervosnetwork/ckb-sdk-utils')
 
-const CKB_NODE_URL = 'https://aggron.ckb.dev';
+const CKB_NODE_URL = 'https://testnet.ckb.dev';
 const blockAssemblerCode = '0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8';
 const r1Type = {
   codeHash: '0x00000000000000000000000000000000000000000000000000545950455f4944',
@@ -17,7 +17,8 @@ const secp256R1LockCell = {
   },
   capacity: 70000 * 10 ** 8,
   outPoint: {
-    txHash: '0x28ee75f9745828eaade301ef24d0b037404717469a299180ecb679259cb688ab',
+    // txHash: '0x28ee75f9745828eaade301ef24d0b037404717469a299180ecb679259cb688ab',
+    txHash: '0x9687ac5e311d009df1505459afc83a55c46496eb292fc11e4f6c24df5dfd4de5',
     index: '0x0',
   },
 

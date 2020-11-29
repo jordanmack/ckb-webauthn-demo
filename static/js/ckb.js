@@ -23,10 +23,22 @@ const querystring = require('querystring')
 const { CKB_NODE_URL, blockAssemblerCode, r1TypeId, secp256R1LockCell, CELL_API_BASE, secp256k1Dep } = require('./ckb_config_aggron')
 
 const ckb = new CKB(CKB_NODE_URL)
+const R1_WITNESS_LEN = 1128;
+
+function pubKeyToLockArg(pubKey){
+  // 0x7bdb7e7970156d9efd264600ff7ed1a10bbacd1e230249d66251dc45c1144b5755ded179b37bab64d0e7b31c687cc5330bc9fff980a2fa2b7e402763bbd77fa2
+  console.log('pubKey', pubKey);
+  const arg =
+    "0x" +
+    hash(Buffer.from(pubKey.replace("0x", ""), "hex"))
+      .toString("hex")
+      .substr(0, 40);
+  return arg;
+}
 
 function addressFromPubKey(pubKey) {
   return fullPayloadToAddress({
-    arg: pubKey,
+    arg: pubKeyToLockArg(pubKey),
     prefix: AddressPrefix.Testnet,
     codeHash: r1TypeId,
     type: AddressType.TypeCodeHash,
@@ -37,7 +49,7 @@ async function getBalance(pubKey) {
   const lockHash = scriptToHash({
     codeHash: r1TypeId,
     hashType: 'type',
-    args: pubKey,
+    args: pubKeyToLockArg(pubKey),
   })
   // const balance = await ckb.rpc.getCapacityByLockHash(lockHash);
 
@@ -87,12 +99,12 @@ async function buildR1Tx(r1PubKey, to, capacity) {
   const inputLockHash = scriptToHash({
     codeHash: r1TypeId,
     hashType: 'type',
-    args: r1PubKey,
+    args: pubKeyToLockArg(r1PubKey),
   })
   console.log('inputLockHash', {
     codeHash: r1TypeId,
     hashType: 'type',
-    args: r1PubKey,
+    args: pubKeyToLockArg(r1PubKey),
   })
   const unspentCells = await getUnspentCell(inputLockHash)
 
@@ -116,7 +128,7 @@ async function buildR1Tx(r1PubKey, to, capacity) {
   const newOutputLock = {
     codeHash: r1TypeId,
     hashType: 'type',
-    args: r1PubKey,
+    args: pubKeyToLockArg(r1PubKey),
   }
 
   changeOutputLock(rawTx, oldOutputLockHash, newOutputLock)
@@ -154,13 +166,13 @@ function extractRSFromSignature(signature) {
   return { r: r.slice(-32), s: s.slice(-32) }
 }
 
-async function signR1Tx(rawTx) {
+async function signR1Tx(rawTx, pubKey) {
   const transactionHash = rawTransactionToHash(rawTx)
 
   console.log('rawTransaction', rawTx)
   console.log('txhash', transactionHash)
   const emptyWitness = rawTx.witnesses[0]
-  emptyWitness.lock = '0x' + '0'.repeat(1000)
+  emptyWitness.lock = '0x' + '0'.repeat(R1_WITNESS_LEN)
 
   const serializedEmptyWitnessBytes = hexToBytes(serializeWitnessArgs(emptyWitness))
   const serialziedEmptyWitnessSize = serializedEmptyWitnessBytes.length
@@ -222,10 +234,12 @@ async function signR1Tx(rawTx) {
   console.log('signature', rsSignature.toString('hex'))
   console.log('authrData', authrData.toString('hex'))
 
-  const lockBuffer = Buffer.concat([rsSignature, authrData, clientDataJSON.toBuffer()])
+  const pubKeyBuffer = Buffer.from(pubKey.replace('0x', ''), 'hex');
+
+  const lockBuffer = Buffer.concat([pubKeyBuffer, rsSignature, authrData, clientDataJSON.toBuffer()])
 
   emptyWitness.lock = lockBuffer.toString('hex')
-  emptyWitness.lock = '0x' + padRight(emptyWitness.lock, 1000, '0')
+  emptyWitness.lock = '0x' + padRight(emptyWitness.lock, R1_WITNESS_LEN, '0')
 
   console.log('emptyWitness.lock', emptyWitness.lock)
 
@@ -243,7 +257,7 @@ async function signR1Tx(rawTx) {
 async function sendCKB(pubKey) {
   console.log('start send CKB to ', pubKey)
   const tx = await buildR1Tx(pubKey, 'ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8', 100)
-  const signedTx = await signR1Tx(tx)
+  const signedTx = await signR1Tx(tx, pubKey)
   console.log('signedTx', signedTx)
 
   try {
