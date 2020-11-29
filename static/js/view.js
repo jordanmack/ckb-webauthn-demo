@@ -174,8 +174,16 @@ $('#sendCKB').click(function (event) {
   const pubKey = '0x' + localStorage.getItem('publicKey')
   console.log('start sendCKB')
   const oldValue = $('#balance').html()
+
+  const toAddress = $('#toAddress').val();
+
+  if(!toAddress || !toAddress.trim().startsWith("ckt")){
+    alert('please input correct CKB testnet address');
+    return;
+  }
+
   if (parseFloat(oldValue) > 200) {
-    sendCKB(pubKey)
+    sendCKB(pubKey, toAddress)
       .then((txHash) => {
         $('#balance').html(oldValue + '...')
         alert('send Success, txHash=' + txHash)

@@ -20,7 +20,7 @@ const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./helpers
 
 const querystring = require('querystring')
 
-const { CKB_NODE_URL, blockAssemblerCode, r1TypeId, secp256R1LockCell, CELL_API_BASE, secp256k1Dep } = require('./ckb_config_aggron')
+const { CKB_NODE_URL, BLOCK_ASSEMBLER_CODE, MULTISIG_TYPE_ID, r1TypeId, secp256R1LockCell, CELL_API_BASE, secp256k1Dep } = require('./ckb_config_aggron')
 
 const ckb = new CKB(CKB_NODE_URL)
 const R1_WITNESS_LEN = 1128;
@@ -93,8 +93,42 @@ function changeOutputLock(tx, oldLockHash, newLock) {
   }
 }
 
-async function buildR1Tx(r1PubKey, to, capacity) {
-  const from = 'ckt1qyqwzd6uxvrh9v2xdp2v5x7uh3gnexcmwncsa967p8'
+function addressToLockScript(address){
+  const data = parseAddress(address, 'hex').replace('0x', '');
+  const type = `0x${data.substr(0, 2)}`;
+
+  let codeHash = '';
+  let hashType = '';
+  let args = '';
+
+  if (type === AddressType.TypeCodeHash) {
+    hashType = 'type';
+    codeHash = '0x' + data.substr(2, 64);
+    args = '0x' + data.substr(66);
+  } else if (type === AddressType.DataCodeHash) {
+    hashType = 'data';
+    codeHash = '0x' + data.substr(2, 64);
+    args = '0x' + data.substr(66);
+  } else if (type === AddressType.HashIdx) {
+    hashType = 'type';
+    args = '0x' + data.substr(4);
+    codeHash = BLOCK_ASSEMBLER_CODE;
+
+    const subType = data.substr(2, 2);
+    if (subType === '00') {
+      codeHash = BLOCK_ASSEMBLER_CODE;
+    } else if (subType === '01') {
+      codeHash = MULTISIG_TYPE_ID;
+    } else {
+      throw new Error('parseAddress failed! Unknown address subType' + subType);
+    }
+  }
+  return { codeHash, hashType, args };
+}
+
+async function buildR1Tx(r1PubKey, toAddress, capacity) {
+  const fakeFrom = 'ckt1qyqwzd6uxvrh9v2xdp2v5x7uh3gnexcmwncsa967p8';
+  const fakeTo = 'ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8';
 
   const inputLockHash = scriptToHash({
     codeHash: r1TypeId,
@@ -109,8 +143,8 @@ async function buildR1Tx(r1PubKey, to, capacity) {
   const unspentCells = await getUnspentCell(inputLockHash)
 
   const rawTx = ckb.generateRawTransaction({
-    fromAddress: from,
-    toAddress: to,
+    fromAddress: fakeFrom,
+    toAddress: fakeTo,
     capacity: BigInt(capacity * 10 ** 8),
     fee: BigInt(100000),
     cells: unspentCells,
@@ -120,9 +154,9 @@ async function buildR1Tx(r1PubKey, to, capacity) {
   })
 
   const oldOutputLockHash = scriptToHash({
-    codeHash: blockAssemblerCode,
+    codeHash: BLOCK_ASSEMBLER_CODE,
     hashType: 'type',
-    args: `0x${parseAddress(from, 'hex').slice(6)}`,
+    args: `0x${parseAddress(fakeFrom, 'hex').slice(6)}`,
   })
   /*change cell*/
   const newOutputLock = {
@@ -130,8 +164,15 @@ async function buildR1Tx(r1PubKey, to, capacity) {
     hashType: 'type',
     args: pubKeyToLockArg(r1PubKey),
   }
-
   changeOutputLock(rawTx, oldOutputLockHash, newOutputLock)
+
+  const oldToOutputLockHash = scriptToHash({
+    codeHash: BLOCK_ASSEMBLER_CODE,
+    hashType: 'type',
+    args: `0x${parseAddress(fakeTo, 'hex').slice(6)}`,
+  })
+  const newToOutputLock = addressToLockScript(toAddress);
+  changeOutputLock(rawTx, oldToOutputLockHash, newToOutputLock);
 
   rawTx.cellDeps.push({ outPoint: secp256R1LockCell.outPoint, depType: 'code' })
 
@@ -254,9 +295,9 @@ async function signR1Tx(rawTx, pubKey) {
   return tx
 }
 
-async function sendCKB(pubKey) {
+async function sendCKB(pubKey, toAddress) {
   console.log('start send CKB to ', pubKey)
-  const tx = await buildR1Tx(pubKey, 'ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8', 100)
+  const tx = await buildR1Tx(pubKey, toAddress, 100)
   const signedTx = await signR1Tx(tx, pubKey)
   console.log('signedTx', signedTx)
 

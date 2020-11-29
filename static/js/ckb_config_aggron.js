@@ -1,7 +1,8 @@
 const { scriptToHash } = require('@nervosnetwork/ckb-sdk-utils')
 
 const CKB_NODE_URL = 'https://testnet.ckb.dev';
-const blockAssemblerCode = '0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8';
+const BLOCK_ASSEMBLER_CODE = '0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8';
+const MULTISIG_TYPE_ID = '0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8';
 const r1Type = {
   codeHash: '0x00000000000000000000000000000000000000000000000000545950455f4944',
   hashType: 'type',
@@ -11,7 +12,7 @@ const r1TypeId = scriptToHash(r1Type);
 const secp256R1LockCell = {
   type: r1Type,
   lock: {
-    codeHash: blockAssemblerCode,
+    codeHash: BLOCK_ASSEMBLER_CODE,
     hashType: 'type',
     args: '0xca911d8850e55caabe27c1fbf90b522db10774bc',
   },
@@ -37,7 +38,8 @@ const CELL_API_BASE = 'https://cellapiaggron.ckb.pw';
 module.exports = {
   CKB_NODE_URL,
   secp256k1Dep,
-  blockAssemblerCode,
+  BLOCK_ASSEMBLER_CODE,
+  MULTISIG_TYPE_ID,
   r1TypeId,
   secp256R1LockCell,
   CELL_API_BASE,
