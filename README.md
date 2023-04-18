@@ -1,28 +1,75 @@
 # CKB WebAuthn Demo
 
-With the help of P-256 lockscript, we can now use Web Authn compatible browsers and devices to create a CKB address directly from a webpage, with a hardware security level key management.
+This proof-of-concept demonstrates how WebAuthn enables users to sign transactions on the CKB blockchain without any additional software. WebAuthn relies on hardware-level secure key management that is available on modern desktops, laptops, tablets, and smartphones. This removes the need for reliance on passwords or seed phrases that can be lost or stolen. This means the user can interact with a dapp using a normal web browser, without the need for any kind of smart contract wallet.
 
-### Instructions
+Not all blockchains can use WebAuthn because it requires support for the NIST P-256 (secp256r1) crypto primitive. This is possible on Nervos because the CKB blockchain relies on [CKB-VM](https://linktr.ee/ckbvm) to execute all smart contracts. CKB-VM is based on the RISC-V CPU architecture, providing developers with the maximum amount of power and flexibility while maintaining a secure high-performance environment. This enables developers to use any crypto primitives they desire by simply providing a normal code library.
 
-1. **FIDO Authenticator**
+The code in this repository is for the backend server and the frontend code. The on-chain component is provided through a special [secp256r1 branch](https://github.com/lay2dev/pw-lock/tree/feature/secp256r1) of the PW-Lock smart contract that supports the NIST P-256 (secp256r1) algorithm needed by WebAuthn. This on-chain script executes at the application level, meaning any developer can develop and deploy a smart contract that uses the same functionality.
 
-   If you already have an authenticator compatible with the FIDO protocol (e.g. yubikey), then almost all platforms (except iOS for now) with modern browsers are available to play. We'll make extra works to add iOS support later.
+## Demo Instructions
 
-   
+The live demo is available for viewing at https://webauthn-demo.ckbdev.com.
 
-2. **Mac with Touch ID**
+> Note: You must be using a device, operating system, and browser that are capable of WebAuthn in order for this to work properly. This should work on most modern computers and devices, but some older devices may not have the necessary hardware.
 
-   You can use the built-in Touch ID as an authenticator on you Mac, but this only works on Chrome for now. Apple's progress in this area has been relatively slow, and we are looking forward to see the built-in biometrics authenticators are well supported with Safari on both macOS and iOS.
+Basic instructions for the demo:
 
-   
+- Open https://webauthn-demo.ckbdev.com in a browser.
+- Register a new account and locate your CKB Address.
+- Use the [Nervos Faucet](https://faucet.nervos.org/) to get some free testnet CKB.
+- Wait for the faucet to send and for the CKB balance to update the demo. (This can sometimes take a few minutes.)
+- Enter a testnet address in the field and click the "Send CKB" button. (You can send to your own address if you don't have a second address to send to.)
 
-3. **Android Phone with Fingerprint**
+## How to Build and Run Locally
 
-   You can use the built-in fingerprint on your Android phones as an authenticator to play with the demo. However cases have been reported that sometimes the signing procedure will have no response when you click the 'Send' button. We'll take a deep look into these cases later.
+The instructions below are for developers who want to build and run the demo locally.
 
-### Run
+> Note: This is for demonstrative purposes only. The code is not production quality, and should not be considered for use to secure real funds on mainnet.
 
-- `git clone https://github.com/lay2dev/ckb-webauthn-demo/`
-- `cd ckb-webauthn-demo`
-- `npm install`
-- `node app`
+### Prerequisites
+- Node.js v18.x (LTS)
+- MongoDB
+
+### Installing Node.js via NVM
+
+If you do not have Node.js installed, we recommend using the [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) to install specific versions. Full installation instructions can be found on the [NVM GitHub](https://github.com/nvm-sh/nvm#installing-and-updating).
+
+#### Quick Install Instructions for Linux
+
+```sh
+wget -qO- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash
+# After installing, you may need to log out and then log back in to the terminal.
+nvm install v18
+```
+
+### Running MongoDB with Docker
+
+If you do not have MongoDB installed and are using Docker, you can easily create a MongoDB instance using the following command.
+
+```
+docker run --name webauthn-mongo -d -p 27017:27017 mongo:latest
+```
+
+### Building
+
+If you make any changes to the source code, you will need to run the build command below. This will build and bundle all the needed files into `static/js/bundle.js` which is used by the web browser.
+
+Building is necessary each time changes are made to the source code. 
+
+```
+npm install
+npm run build
+```
+
+### Running the Server
+
+The commands below can be used to run the server on `localhost` using the default port of `3010`. These options can be configured in `config.json`.
+
+```sh
+npm install
+npm run server
+```
+
+Once running, you can open the interface by opening a browser web to [http://localhost:3010](http://localhost:3010).
+
+> Note: This demo will work properly on `localhost` and on `https` enabled domains. These are requirements of WebAuthn that cannot be circumvented. If you try to run this on a server IP address without `https` the demo will fail.
