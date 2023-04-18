@@ -1,7 +1,7 @@
 const { getMakeCredentialsChallenge, sendWebAuthnResponse, getGetAssertionChallenge } = require('./webauthn.auth')
 const { publicKeyCredentialToJSON, preformatGetAssertReq, preformatMakeCredReq } = require('./helpers')
 const arrayBufferToHex = require('array-buffer-to-hex')
-const { addressFromPubKey, getBalance, sendCKB } = require('./ckb')
+const { addressFromPubKey, getBalance, sendCKB, initializeLumosConfig } = require('./ckb')
 
 /**
  * Switch to login page
@@ -17,7 +17,7 @@ const timeOutFunc = () => {
   for(const func of scheduleJobList){
     func();
   }
-  setTimeout(timeOutFunc, 2000)
+  setTimeout(timeOutFunc, 10 * 1000)
 }
 timeOutFunc();
 
@@ -35,7 +35,6 @@ let loadMainContainer = () => {
     .then((response) => response.json())
     .then((response) => {
       if (response.status === 'ok') {
-        $('#theSecret').html(response.theSecret)
         $('#name').html(response.name)
         $('#registerContainer').hide()
         $('#loginContainer').hide()
@@ -45,11 +44,12 @@ let loadMainContainer = () => {
         const address = addressFromPubKey(pubKey)
         $('#address').html(address)
 
-        const balanceFunc = () => {
-          getBalance(pubKey).then((balance) => {
+        const balanceFunc = async () => {
+          await getBalance(pubKey).then((balance) => {
             $('#balance').html(balance + '')
           })
         }
+        balanceFunc();
 
         if(!scheduleJobList.includes(balanceFunc)){
            scheduleJobList.push(balanceFunc);
@@ -173,7 +173,8 @@ $('#sendCKB').click(function (event) {
   event.preventDefault()
   const pubKey = '0x' + localStorage.getItem('publicKey')
   console.log('start sendCKB')
-  const oldValue = $('#balance').html()
+  const oldValue = $('#balance').text().replace(/\D/g,'')
+  console.log('parsed balance ' + oldValue)
 
   const toAddress = $('#toAddress').val();
 
@@ -188,15 +189,16 @@ $('#sendCKB').click(function (event) {
         $('#balance').html(oldValue + '...')
         alert('send Success, txHash=' + txHash)
       })
-      .catch((err) => {
-        alert(err)
-      })
+      // .catch((err) => {
+      //   alert(err)
+      // })
   } else {
-    alert('balance not enough')
+    alert('CKB balance is too low to send.')
   }
 })
 
 $(document).ready(() => {
+  initializeLumosConfig()
   checkIfLoggedIn().then((response) => {
     if (response) return loadMainContainer()
   })

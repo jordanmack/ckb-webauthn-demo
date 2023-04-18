@@ -1,4 +1,4 @@
 {
     "port": 3010,
-    "origin": "https://r1-demo.ckb.pw"
+    "origin": "http://localhost:3010"
 }

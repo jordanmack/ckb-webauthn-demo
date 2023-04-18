@@ -1,8 +1,6 @@
 const crypto    = require('crypto');
 const base64url = require('base64url');
 const cbor      = require('cbor');
-const { Certificate } = require('@fidm/x509');
-const iso_3166_1 = require('iso-3166-1');
 
 /**
  * U2F Presence constant

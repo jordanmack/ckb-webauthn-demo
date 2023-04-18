@@ -36,8 +36,7 @@ router.get('/personalInfo', (request, response) => {
   } else {
     response.json({
       status: 'ok',
-      name: request.session.username,
-      theSecret: '<img width="150px" src="img/theworstofthesecrets.jpg">',
+      name: request.session.username
     })
   }
 })

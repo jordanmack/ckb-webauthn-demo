@@ -1,32 +1,24 @@
-const CKB = require('@nervosnetwork/ckb-sdk-core').default
-const {
-  scriptToHash,
-  parseAddress,
-  // hexToBytes as CKBHexToBytes,
-  serializeWitnessArgs,
-  toHexInLittleEndian,
-  fullPayloadToAddress,
-  AddressType,
-  AddressPrefix,
-  rawTransactionToHash,
-  toUint32Le,
-  toUint64Le,
-} = require('@nervosnetwork/ckb-sdk-utils')
+const lumosBase = require('@ckb-lumos/base');
+const lumosLumos = require('@ckb-lumos/lumos');
+const { bytes, number } = require('@ckb-lumos/codec');
+const { initializeConfig, predefined } = require('@ckb-lumos/config-manager');
+const { addressToScript, encodeToAddress, TransactionSkeleton, createTransactionFromSkeleton } = require('@ckb-lumos/helpers');
+const { CellCollector, Indexer } = require('@ckb-lumos/ckb-indexer');
+const { RPC } = lumosLumos;
+const rawTransactionPack = lumosBase.blockchain.RawTransaction.pack;
+const witnessArgsPack = lumosBase.blockchain.WitnessArgs.pack;
+const { ckbHash } = lumosBase.utils;
 const arrayBufferToHex = require('array-buffer-to-hex')
-const { sha3, hexToNumber, bytesToHex, hexToBytes, padRight, padLeft, numberToHex } = require('web3-utils')
+const { hexToBytes, padRight, padLeft } = require('web3-utils')
 const { createHash } = require('crypto')
+const { parseGetAssertAuthData } = require('./helpers')
+const { CKB_NODE_URL, CKB_INDEXER_NODE_URL, r1TypeId, secp256R1LockCell } = require('./ckb_config_aggron')
 
-const { publicKeyCredentialToJSON, parseGetAssertAuthData } = require('./helpers')
-
-const querystring = require('querystring')
-
-const { CKB_NODE_URL, BLOCK_ASSEMBLER_CODE, MULTISIG_TYPE_ID, r1TypeId, secp256R1LockCell, CELL_API_BASE, secp256k1Dep } = require('./ckb_config_aggron')
-
-const ckb = new CKB(CKB_NODE_URL)
+const ckb = new RPC(CKB_NODE_URL)
+const ckbIndexer = new Indexer(CKB_INDEXER_NODE_URL, CKB_NODE_URL);
 const R1_WITNESS_LEN = 1128;
 
 function pubKeyToLockArg(pubKey){
-  // 0x7bdb7e7970156d9efd264600ff7ed1a10bbacd1e230249d66251dc45c1144b5755ded179b37bab64d0e7b31c687cc5330bc9fff980a2fa2b7e402763bbd77fa2
   console.log('pubKey', pubKey);
   const arg =
     "0x" +
@@ -37,149 +29,111 @@ function pubKeyToLockArg(pubKey){
 }
 
 function addressFromPubKey(pubKey) {
-  return fullPayloadToAddress({
-    arg: pubKeyToLockArg(pubKey),
-    prefix: AddressPrefix.Testnet,
+  const script = {
     codeHash: r1TypeId,
-    type: AddressType.TypeCodeHash,
-  })
+    hashType: 'type',
+    args: pubKeyToLockArg(pubKey)
+  };
+  return encodeToAddress(script);
+}
+
+async function collectBalance(lockScript)
+{
+	const query = {lock: lockScript, type: "empty"};
+	const cellCollector = new CellCollector(ckbIndexer, query);
+
+	let inputCapacity = 0n;
+
+	for await (const cell of cellCollector.collect())
+		inputCapacity += BigInt(cell.cellOutput.capacity);
+
+	return inputCapacity;
+}
+
+async function collectCapacity(lockScript, capacityRequired)
+{
+	const query = {lock: lockScript, type: "empty"};
+	const cellCollector = new CellCollector(ckbIndexer, query);
+
+	let inputCells = [];
+	let inputCapacity = 0n;
+
+	for await (const cell of cellCollector.collect())
+	{
+		inputCells.push(cell);
+		inputCapacity += BigInt(cell.cellOutput.capacity);
+
+		if(inputCapacity >= capacityRequired)
+			break;
+	}
+
+	if(inputCapacity < capacityRequired)
+		throw new Error("Unable to collect enough cells to fulfill the capacity requirements.");
+
+	return {inputCells, inputCapacity};
 }
 
 async function getBalance(pubKey) {
-  const lockHash = scriptToHash({
+  const lockScript = {
     codeHash: r1TypeId,
     hashType: 'type',
     args: pubKeyToLockArg(pubKey),
-  })
-  // const balance = await ckb.rpc.getCapacityByLockHash(lockHash);
+  };
 
-  const url = CELL_API_BASE + '/cell/getCapacityByLockHash?lockHash=' + lockHash
-
-  const response = await fetch(url)
-  const result = await response.json()
-  console.log('balance', result)
-
-  const balance = Number(result.data)
+  const balance = Number(await collectBalance(lockScript));
   console.log('balance', balance)
-  const balanceStr = balance / 10 ** 8
+
+  const balanceStr = Number(balance / 10 ** 8).toLocaleString();
+  console.log("balanceStr", balanceStr)
 
   return balanceStr
 }
 
-async function getUnspentCell(lockHash) {
-  // const unspentCells = await ckb.loadCells({ lockHash });
-  // return unspentCells;
+async function buildR1Tx(r1PubKey, toAddress, amountToSend) {
+  const txFee = 100_000n // Fee is 100,000 Shannons. 1 CKB = 100,000,000 Shannons.
 
-  const args = {
-    capacity: numberToHex(1000 * 10 ** 8),
-    lockHash,
-  }
-
-  const params = querystring.stringify(args)
-  const url = CELL_API_BASE + '/cell/unSpent?' + params
-  console.log('url', url)
-
-  const response = await fetch(url)
-  const result = await response.json()
-  console.log('response', result)
-
-  return result.data
-}
-function changeOutputLock(tx, oldLockHash, newLock) {
-  for (const output of tx.outputs) {
-    if (scriptToHash(output.lock) === oldLockHash) {
-      output.lock = newLock
-    }
-  }
-}
-
-function addressToLockScript(address){
-  const data = parseAddress(address, 'hex').replace('0x', '');
-  const type = `0x${data.substr(0, 2)}`;
-
-  let codeHash = '';
-  let hashType = '';
-  let args = '';
-
-  if (type === AddressType.TypeCodeHash) {
-    hashType = 'type';
-    codeHash = '0x' + data.substr(2, 64);
-    args = '0x' + data.substr(66);
-  } else if (type === AddressType.DataCodeHash) {
-    hashType = 'data';
-    codeHash = '0x' + data.substr(2, 64);
-    args = '0x' + data.substr(66);
-  } else if (type === AddressType.HashIdx) {
-    hashType = 'type';
-    args = '0x' + data.substr(4);
-    codeHash = BLOCK_ASSEMBLER_CODE;
-
-    const subType = data.substr(2, 2);
-    if (subType === '00') {
-      codeHash = BLOCK_ASSEMBLER_CODE;
-    } else if (subType === '01') {
-      codeHash = MULTISIG_TYPE_ID;
-    } else {
-      throw new Error('parseAddress failed! Unknown address subType' + subType);
-    }
-  }
-  return { codeHash, hashType, args };
-}
-
-async function buildR1Tx(r1PubKey, toAddress, capacity) {
-  const fakeFrom = 'ckt1qyqwzd6uxvrh9v2xdp2v5x7uh3gnexcmwncsa967p8';
-  const fakeTo = 'ckt1qyqv4yga3pgw2h92hcnur7lepdfzmvg8wj7qn44vz8';
-
-  const inputLockHash = scriptToHash({
-    codeHash: r1TypeId,
-    hashType: 'type',
-    args: pubKeyToLockArg(r1PubKey),
-  })
-  console.log('inputLockHash', {
-    codeHash: r1TypeId,
-    hashType: 'type',
-    args: pubKeyToLockArg(r1PubKey),
-  })
-  const unspentCells = await getUnspentCell(inputLockHash)
-
-  const rawTx = ckb.generateRawTransaction({
-    fromAddress: fakeFrom,
-    toAddress: fakeTo,
-    capacity: BigInt(capacity * 10 ** 8),
-    fee: BigInt(100000),
-    cells: unspentCells,
-    deps: secp256k1Dep,
-    safeMode: true,
-    changeThreshold: '0x' + BigInt(105 * 10 ** 8).toString(16),
-  })
-
-  const oldOutputLockHash = scriptToHash({
-    codeHash: BLOCK_ASSEMBLER_CODE,
-    hashType: 'type',
-    args: `0x${parseAddress(fakeFrom, 'hex').slice(6)}`,
-  })
-  /*change cell*/
-  const newOutputLock = {
+  // This is the lock script we are sending from, and will also get the change from the transaction.
+  const inputLockScript = {
     codeHash: r1TypeId,
     hashType: 'type',
     args: pubKeyToLockArg(r1PubKey),
   }
-  changeOutputLock(rawTx, oldOutputLockHash, newOutputLock)
+  console.log('inputLockScript', inputLockScript);
+  
+  // Create a transaction skeleton.
+  let txSkeleton = TransactionSkeleton();
 
-  const oldToOutputLockHash = scriptToHash({
-    codeHash: BLOCK_ASSEMBLER_CODE,
-    hashType: 'type',
-    args: `0x${parseAddress(fakeTo, 'hex').slice(6)}`,
-  })
-  const newToOutputLock = addressToLockScript(toAddress);
-  changeOutputLock(rawTx, oldToOutputLockHash, newToOutputLock);
+  // Add the cell dep for the secp256r1 lock script.
+	txSkeleton = txSkeleton.update("cellDeps", (cellDeps)=>cellDeps.push({ outPoint: secp256R1LockCell.outPoint, depType: 'code' }));
 
-  rawTx.cellDeps.push({ outPoint: secp256R1LockCell.outPoint, depType: 'code' })
+  // Collect and add the required capacity to the transaction.
+  const ckbRequired = ((BigInt(amountToSend) + 61n) * BigInt(10**8)) + txFee // CKBytes required: Capacity required + 61 for a change cell + 100,000 shannons as the tx fee.
+  console.log("ckbRequired", ckbRequired)
+  const inputCells = (await collectCapacity(inputLockScript, ckbRequired)).inputCells
+  console.log("inputCells", inputCells)
+  txSkeleton = txSkeleton.update("inputs", (i)=>i.concat(inputCells));
 
-  rawTx.witnesses = rawTx.inputs.map(() => '0x')
-  rawTx.witnesses[0] = { lock: '', inputType: '', outputType: '' }
+  // Create an output cell to the destination address for the exact amount of CKB being sent.
+  const output = {cellOutput: {capacity: `0x${BigInt(BigInt(amountToSend) * BigInt(10**8)).toString(16)}`, lock: addressToScript(toAddress), type: null}, data: "0x"};
+  txSkeleton = txSkeleton.update("outputs", (i)=>i.push(output));
 
-  return rawTx
+	// Determine the capacity of all input cells and output cells.
+	const inputCapacity = txSkeleton.inputs.toArray().reduce((a, c)=>a+BigInt(c.cellOutput.capacity), 0n);
+	const outputCapacity = txSkeleton.outputs.toArray().reduce((a, c)=>a+BigInt(c.cellOutput.capacity), 0n);
+  console.log("inputCapacity/outputCapacity", inputCapacity, outputCapacity)
+
+	// Create a change Cell for the remaining CKBytes.
+	const changeCapacity = BigInt(inputCapacity - outputCapacity - txFee).toString(16);
+	let change = {cellOutput: {capacity: `0x${changeCapacity}`, lock: inputLockScript, type: null}, data: "0x"};
+	txSkeleton = txSkeleton.update("outputs", (i)=>i.push(change));
+
+  // Setup empty witness structure with witnesses[0] being populated with an empty WitnessArgs structure.
+  txSkeleton = txSkeleton.update("witnesses", ()=>txSkeleton.inputs.map(() => '0x'))
+  txSkeleton = txSkeleton.update("witnesses", (i)=>i.splice(0, 1, { lock: '0x', inputType: '0x', outputType: '0x' }));
+  
+  console.log("txSkeleton", txSkeleton.toJS())
+
+  return txSkeleton
 }
 
 function hash(data) {
@@ -207,36 +161,54 @@ function extractRSFromSignature(signature) {
   return { r: r.slice(-32), s: s.slice(-32) }
 }
 
-async function signR1Tx(rawTx, pubKey) {
-  const transactionHash = rawTransactionToHash(rawTx)
+function serializeWitnessArgs(witness) {
+  return bytes.hexify(witnessArgsPack(witness))
+}
 
-  console.log('rawTransaction', rawTx)
-  console.log('txhash', transactionHash)
-  const emptyWitness = rawTx.witnesses[0]
-  emptyWitness.lock = '0x' + '0'.repeat(R1_WITNESS_LEN)
+function toUint64Le(hex) {
+  return bytes.hexify(number.Uint64LE.pack(hex))
+}
 
-  const serializedEmptyWitnessBytes = hexToBytes(serializeWitnessArgs(emptyWitness))
+async function signR1Tx(txSkeleton, pubKey) {
+  // Zero-fill the lock key of the witnesses in preparation for generating a tx hash.
+  const zeroFilledWitness = txSkeleton.witnesses.get(0)
+  zeroFilledWitness.lock = '0x' + '0'.repeat(R1_WITNESS_LEN)
+  txSkeleton = txSkeleton.update("witnesses", (i)=>i.splice(0, 1, serializeWitnessArgs(zeroFilledWitness)));
+
+  // Convert from a tx skeleton to a tx.
+  let tx = createTransactionFromSkeleton(txSkeleton)
+  console.log('tx', tx)
+
+  // Calculate the hash of the packed tx structure.
+  const txHash = ckbHash(rawTransactionPack(tx))
+  console.log('txHash', txHash)
+
+  // Determine the size of the witness when packed to bytes.
+  const serializedEmptyWitnessBytes = hexToBytes(serializeWitnessArgs(zeroFilledWitness))
   const serialziedEmptyWitnessSize = serializedEmptyWitnessBytes.length
   console.log('serialziedEmptyWitnessSize', serialziedEmptyWitnessSize)
 
-  // Calculate keccak256 hash for rawTransaction
+  // Calculate keccak256 hash for the tx + witnesses.
   const sha256Hasher = createHash('SHA256')
-  sha256Hasher.update(Buffer.from(transactionHash.replace('0x', ''), 'hex'))
+  sha256Hasher.update(Buffer.from(txHash.replace('0x', ''), 'hex'))
   sha256Hasher.update(Buffer.from(toUint64Le(`0x${serialziedEmptyWitnessSize.toString(16)}`).replace('0x', ''), 'hex'))
   sha256Hasher.update(Buffer.from(serializedEmptyWitnessBytes))
 
-  rawTx.witnesses.slice(1).forEach((w) => {
+  // Add remaining witnesses to hash.
+  txSkeleton.witnesses.toJS().slice(1).forEach((w) => {
     const bytes = hexToBytes(typeof w === 'string' ? w : serializeWitnessArgs(w))
     sha256Hasher.update(Buffer.from(toUint64Le(`0x${bytes.length.toString(16)}`).replace('0x', ''), 'hex'))
     sha256Hasher.update(Buffer.from(bytes))
   })
 
+  // Generate the challenge.
   let challenge = sha256Hasher.digest()
   console.log('challenge', challenge)
-  // challenge = b64encode(challenge, 'hex')
+
   let credID = localStorage.getItem('credID')
   const credIDBuffer = base64url.decode(credID)
-
+  console.log('credID', credID)
+  
   let webauthnPubKey = {
     challenge,
     allowCredentials: [
@@ -249,7 +221,6 @@ async function signR1Tx(rawTx, pubKey) {
   }
 
   const webauthnResult = await navigator.credentials.get({ publicKey: webauthnPubKey })
-  // let getAssertionResponse = publicKeyCredentialToJSON(webauthnResult);
   console.log('webauthResult', webauthnResult)
   const { signature, clientDataJSON, authenticatorData } = webauthnResult.response
   console.log('signature', arrayBufferToHex(signature))
@@ -257,7 +228,6 @@ async function signR1Tx(rawTx, pubKey) {
   const utf8Decoder = new TextDecoder('utf-8')
   const decodedClientData = utf8Decoder.decode(clientDataJSON)
   const clientDataObj = JSON.parse(decodedClientData)
-
   console.log('clientDataObj', clientDataObj)
 
   let authrDataStruct = parseGetAssertAuthData(authenticatorData)
@@ -276,23 +246,23 @@ async function signR1Tx(rawTx, pubKey) {
   console.log('authrData', authrData.toString('hex'))
 
   const pubKeyBuffer = Buffer.from(pubKey.replace('0x', ''), 'hex');
-
   const lockBuffer = Buffer.concat([pubKeyBuffer, rsSignature, authrData, clientDataJSON.toBuffer()])
 
-  emptyWitness.lock = lockBuffer.toString('hex')
-  emptyWitness.lock = '0x' + padRight(emptyWitness.lock, R1_WITNESS_LEN, '0')
+  // Copy lockBuffer signature into a new witness entry.
+  let newWitness = { ...zeroFilledWitness };
+  newWitness.lock = '0x' + padRight(lockBuffer.toString('hex'), R1_WITNESS_LEN, '0')
+  console.log('newWitness', newWitness)
 
-  console.log('emptyWitness.lock', emptyWitness.lock)
-
-  const signedWitnesses = [serializeWitnessArgs(emptyWitness), ...rawTx.witnesses.slice(1)]
-  const tx = {
-    ...rawTx,
+  // Add the new witness as witnesses[0] to create the signedTx.
+  const signedWitnesses = [serializeWitnessArgs(newWitness), ...txSkeleton.witnesses.slice(1)]
+  const signedTx = {
+    ...tx,
     witnesses: signedWitnesses.map((witness) =>
       typeof witness === 'string' ? witness : serializeWitnessArgs(witness)
     ),
   }
 
-  return tx
+  return signedTx
 }
 
 async function sendCKB(pubKey, toAddress) {
@@ -302,8 +272,7 @@ async function sendCKB(pubKey, toAddress) {
   console.log('signedTx', signedTx)
 
   try {
-    const ckb2 = new CKB(CKB_NODE_URL)
-    const realTxHash = await ckb2.rpc.sendTransaction(signedTx)
+    const realTxHash = await ckb.sendTransaction(signedTx)
     console.log(`The real transaction hash is: ${realTxHash}`)
 
     return realTxHash
@@ -313,8 +282,14 @@ async function sendCKB(pubKey, toAddress) {
   }
 }
 
+function initializeLumosConfig()
+{
+  initializeConfig(predefined.AGGRON4)
+}
+
 module.exports = {
   addressFromPubKey,
   getBalance,
   sendCKB,
+  initializeLumosConfig
 }
