@@ -187,7 +187,9 @@ $('#sendCKB').click(function (event) {
     sendCKB(pubKey, toAddress)
       .then((txHash) => {
         $('#balance').html(oldValue + '...')
-        alert('send Success, txHash=' + txHash)
+        $('#transactions').show()
+        $('#transaction-link').html(`TX Hash: <a href="https://pudge.explorer.nervos.org/transaction/${txHash}" target="_blank">${txHash}</a>`)
+        alert('Send successful!')
       })
       // .catch((err) => {
       //   alert(err)

@@ -78,15 +78,24 @@
 
                 <div class="secretcontainer" style="overflow: hidden;">
 		            <h3>Hey <span id="name"></span>!</h3>
-		            <div>CKBAddress: <span id="address" class='addressSpan'></span></div>
-                    <div style="margin-bottom: 1rem;">Balance: <span id="balance"></span> CKB </div>
-                    <div>Need some testnet CKB? Visit the <a href='https://faucet.nervos.org/' target = '_blank'>Nervos Faucet</a>!</div>
-                    <hr>
-                    <div>Send 100 CKB to <span class="addressSpan"></span>
-                    <input type="text" id="toAddress" placeholder="input ckb testnet address here" />
+		            <div>
+                        CKBAddress: <span id="address" class='addressSpan'></span>
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        Balance: <span id="balance"></span> CKB
                     </div>
                     <div>
-                    <button id="sendCKB">Send CKB</button>
+                        Need some testnet CKB? Visit the <a href='https://faucet.nervos.org/' target = '_blank'>Nervos Faucet</a>!
+                    </div>
+                    <hr>
+                    <div>Send 100 CKB to <span class="addressSpan"></span>
+                        <input type="text" id="toAddress" placeholder="input ckb testnet address here" />
+                    </div>
+                    <div>
+                        <button id="sendCKB">Send CKB</button>
+                    </div>
+                    <div id="transactions" style="display: none;">
+                        <span id="transaction-link">&nbsp;</span>
                     </div>
                     <hr>
                     <button id="logoutButton">Logout</button>
