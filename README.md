@@ -46,17 +46,17 @@ nvm install v18
 
 If you do not have MongoDB installed and are using Docker, you can easily create a MongoDB instance using the following command.
 
-```
+```sh
 docker run --name webauthn-mongo -d -p 27017:27017 mongo:latest
 ```
 
 ### Building
 
-If you make any changes to the source code, you will need to run the build command below. This will build and bundle all the needed files into `static/js/bundle.js` which is used by the web browser.
+Before running the server, you will need to create a build. This will build and bundle all the needed files into `static/js/bundle.js` which is used by the web browser.
 
-Building is necessary each time changes are made to the source code. 
+Running the build command is necessary any time changes are made to the source code. 
 
-```
+```sh
 npm install
 npm run build
 ```
